@@ -485,7 +485,6 @@ function applyPreset(){
   const wl=document.getElementById('w-lap'); if(wl){ wl.max=p.laps; if(+wl.value>p.laps) wl.value=p.laps; renderWall(); }
 }
 $('circuit').addEventListener('change',applyPreset);
-applyPreset();
 
 /* ---- Pit-wall live ---- */
 const wUsed = new Set(['SOFT']);
@@ -568,7 +567,7 @@ document.querySelectorAll('#w-used .used-chip').forEach(ch=>ch.addEventListener(
   if(wUsed.has(c)) wUsed.delete(c); else wUsed.add(c);
   renderWall();
 }));
-renderWall();
+applyPreset();
 
 // degradation chart
 const mods=models();
