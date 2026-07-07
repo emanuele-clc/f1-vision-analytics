@@ -14,13 +14,18 @@ def build_laptime_dataset(laps: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     e mescola in one-hot. Target: laptime_s.
     """
     df = laps.dropna(subset=["laptime_s", "TyreLife"]).copy()
+    life = df["TyreLife"].astype(float)
     x = pd.DataFrame({
-        "tyre_life": df["TyreLife"].astype(float),
+        "tyre_life": life,
+        "tyre_life_sq": life**2,               # cattura il degrado non lineare
         "lap_number": df["LapNumber"].astype(float),
         "stint": df["Stint"].astype(float),
     })
     for c in COMPOUNDS:
         x[f"comp_{c}"] = (df["Compound"].astype(str).str.upper() == c).astype(int)
+    for opt in ("TrackTemp", "AirTemp"):       # feature opzionali se presenti nei dati
+        if opt in df.columns and df[opt].notna().any():
+            x[opt.lower()] = df[opt].astype(float)
     y = df["laptime_s"].astype(float).reset_index(drop=True)
     return x.reset_index(drop=True), y
 

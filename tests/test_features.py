@@ -59,3 +59,21 @@ def test_fuel_correction_separates_effects():
     assert soft["fuel_s_per_lap"] == pytest.approx(-0.03, abs=0.01)
     assert soft["deg_s_per_lap"] == pytest.approx(0.10, abs=0.02)
     assert hard["deg_s_per_lap"] == pytest.approx(0.04, abs=0.02)
+
+
+def test_synthetic_race_is_usable():
+    from f1va import synthetic
+    race = synthetic.generate_race(n_drivers=6, laps=40, seed=1)
+    assert {"Compound", "TyreLife", "LapNumber", "laptime_s"} <= set(race.columns)
+    x, y = features.build_laptime_dataset(race)
+    assert len(x) == len(y) > 100
+
+
+def test_outcome_dataset_and_signal():
+    from f1va import outcome
+    res = outcome.generate_race_outcomes(n_races=12, n_drivers=20, seed=2)
+    x, y, _ = outcome.build_outcome_dataset(res)
+    assert list(x.columns) == ["grid_pos", "driver_form", "team_form"]
+    assert len(x) == len(y) == 12 * 20
+    # la griglia da sola deve correlare con l'arrivo (segnale presente)
+    assert x["grid_pos"].corr(y.astype(float)) > 0.3

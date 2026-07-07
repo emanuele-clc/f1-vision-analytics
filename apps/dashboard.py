@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from f1va import data as f1data      # noqa: E402
 from f1va import features, strategy  # noqa: E402
+from f1va import montecarlo as mcarlo  # noqa: E402
 
 # ----------------------------------------------------------------------------- #
 #  Stile
@@ -189,6 +190,30 @@ with tab_strat:
         m1, m2 = st.columns(2)
         kpi(m1, "Soste", f"{best.n_stops}")
         kpi(m2, "Tempo gara stimato", f"{best.total_time_s/60:.2f} min")
+
+        st.markdown("---")
+        st.markdown("#### Analisi del rischio · Monte Carlo")
+        st.caption("Migliaia di gare simulate con Safety Car e variabilità di degrado e pit-stop.")
+        sc = st.slider("Probabilità Safety Car", 0.0, 0.8, 0.35, 0.05)
+        cond = mcarlo.RaceConditions(total_laps=total_laps, pit_loss=pit_loss, sc_prob=sc)
+        mc = mcarlo.optimize_mc(models, cond, list(models.keys()), max_stops=max_stops, n=4000)
+        bmc = mc["best"]
+        plan_mc = " → ".join(f"{c}·{n}" for c, n in bmc["stints"])
+        n1, n2, n3 = st.columns(3)
+        kpi(n1, "Consigliata (robusta)", plan_mc)
+        kpi(n2, "Tempo atteso · P10–P90",
+            f"{bmc['mean_s']/60:.2f} ({bmc['p10_s']/60:.2f}–{bmc['p90_s']/60:.2f}) min")
+        kpi(n3, "Batte la 2ª strategia", f"{mc['win_prob_vs_second']*100:.0f}%")
+        top = mc["ranked"][:5]
+        labels = [" · ".join(f"{c}{n}" for c, n in r["stints"]) for r in top]
+        means = [r["mean_s"] / 60 for r in top]
+        lo = [(r["mean_s"] - r["p10_s"]) / 60 for r in top]
+        hi = [(r["p90_s"] - r["mean_s"]) / 60 for r in top]
+        figm = go.Figure(go.Bar(
+            x=labels, y=means, marker_color="#E10600",
+            error_y=dict(type="data", symmetric=False, array=hi, arrayminus=lo, color="#bbb")))
+        figm.update_layout(yaxis_title="Tempo atteso (min)", xaxis_tickangle=-15)
+        st.plotly_chart(plot_layout(figm, 320), use_container_width=True)
 
 with tab_replay:
     st.subheader("Replay delle posizioni in pista")
