@@ -180,6 +180,20 @@ footer a{color:#fff}
 .used-chip{flex:1;text-align:center;padding:8px;border-radius:3px;border:1px solid var(--border);font-family:var(--mono);font-size:.78rem;cursor:pointer;user-select:none;color:var(--muted)}
 .used-chip.on{color:#111;font-weight:700}
 
+
+/* duello */
+.dtoggle{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.82rem;color:var(--muted);cursor:pointer}
+.duel-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
+@media(max-width:720px){.duel-cards{grid-template-columns:1fr}}
+.dcard{position:relative;background:#101016;border:1px solid var(--border);border-radius:4px;padding:18px;text-align:center;transition:.2s;overflow:hidden}
+.dcard .dl{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.dcard .dp{font-family:var(--mono);font-weight:700;font-size:2rem;margin:6px 0}
+.dcard .ds{font-size:.72rem;color:var(--muted)}
+.dcard.best{border-color:var(--green);background:rgba(55,245,160,.07)}
+.dcard.best .dp{color:var(--green)}
+.dcard.best::before{content:"MIGLIORE";position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;color:var(--green)}
+.d-verdict{margin-top:20px;font-family:var(--mono);color:#fff;font-size:.95rem;border-top:1px solid var(--border);padding-top:16px}
+
 </style>
 </head>
 <body>
@@ -189,7 +203,7 @@ footer a{color:#fff}
 <nav><div class="wrap">
   <div class="brand"><span class="dot"></span> F1 Strategy&nbsp;&amp;&nbsp;ML</div>
   <div class="nav-links">
-    <a href="#demo">Demo</a><a href="#pitwall">Pit-wall</a><a href="#pace">Degrado</a><a href="#metodo">Metodo</a><a href="#ml">ML</a><a href="#features">Features</a><a href="#stack">Stack</a>
+    <a href="#demo">Demo</a><a href="#pitwall">Pit-wall</a><a href="#duello">Duello</a><a href="#pace">Degrado</a><a href="#metodo">Metodo</a><a href="#ml">ML</a><a href="#features">Features</a><a href="#stack">Stack</a>
   </div>
   <a class="btn btn-primary" href="https://github.com/emanuele-clc/f1-vision-analytics" target="_blank">GitHub ↗</a>
 </div></nav>
@@ -288,6 +302,21 @@ footer a{color:#fff}
       </div>
     </div>
    </div>
+  </div>
+</div></section>
+
+<section id="duello"><div class="wrap reveal">
+  <div class="eyebrow">Testa a testa</div>
+  <div class="h2">Undercut o overcut?</div>
+  <p class="lead">Sei in lotta con un rivale. Muovi il distacco e attiva gli imprevisti: il modello simula centinaia di gare (aria sporca, Safety Car, pioggia) e dice quale mossa ti dà più probabilità di finire davanti.</p>
+  <div class="demo" style="margin-top:30px">
+    <div class="control" style="max-width:520px"><label>Distacco dal rivale <b id="dv-gap">-0.8 s</b></label><input type="range" id="d-gap" min="-4" max="4" value="-0.8" step="0.1"></div>
+    <div style="display:flex;gap:22px;margin:12px 0 24px;flex-wrap:wrap">
+      <label class="dtoggle"><input type="checkbox" id="d-sc"> Safety Car probabile</label>
+      <label class="dtoggle"><input type="checkbox" id="d-rain"> Pioggia possibile</label>
+    </div>
+    <div class="duel-cards" id="d-cards"></div>
+    <div class="d-verdict" id="d-verdict"></div>
   </div>
 </div></section>
 
@@ -482,6 +511,7 @@ function applyPreset(){
   setTrack(p.track);
   render();
   const wl=document.getElementById('w-lap'); if(wl){ wl.max=p.laps; if(+wl.value>p.laps) wl.value=p.laps; renderWall(); }
+  if(document.getElementById('d-gap')) renderDuel();
 }
 $('circuit').addEventListener('change',applyPreset);
 
@@ -567,6 +597,63 @@ document.querySelectorAll('#w-used .used-chip').forEach(ch=>ch.addEventListener(
   renderWall();
 }));
 applyPreset();
+
+/* ---- Duello testa a testa ---- */
+function randn(){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function lapSchedule(stints,mods,total){
+  const times=[],pit=new Set();let lap=0;
+  for(let i=0;i<stints.length;i++){const c=stints[i][0],len=stints[i][1],m=mods[c];
+    for(let a=0;a<len&&lap<total;a++){times.push(m.base+m.deg*a);lap++;}
+    if(i<stints.length-1)pit.add(lap-1);}
+  while(times.length<total)times.push(times[times.length-1]||90);
+  return {times:times.slice(0,total),pit};
+}
+function duelWinProb(A,B,mods,total,gap,o){
+  const pitLoss=22,pitSd=1,noiseSd=0.08,dirtyS=0.45,dirtyGap=1.2,margin=0.5,scBunch=0.2,scDisc=0.55,dnf=0.06,rainMult=6;
+  const scProb=o.scProb,rainProb=o.rainProb,n=o.n||500;
+  const sa=lapSchedule(A,mods,total),sb=lapSchedule(B,mods,total);let wins=0;
+  for(let s=0;s<n;s++){
+    const scOn=Math.random()<scProb,scLap=1+Math.floor(Math.random()*total);
+    const rainOn=Math.random()<rainProb,rainLap=1+Math.floor(Math.random()*total);
+    const aD=Math.random()<dnf,bD=Math.random()<dnf;let ca=0,cb=gap;
+    for(let l=0;l<total;l++){
+      const wet=rainOn&&l>=rainLap,nz=wet?noiseSd*rainMult:noiseSd;
+      let la=sa.times[l]+randn()*nz,lb=sb.times[l]+randn()*nz;
+      const nearSc=scOn&&Math.abs(l-scLap)<=2;
+      if(sa.pit.has(l)){let pp=pitLoss+randn()*pitSd;la+=nearSc?pp*(1-scDisc):pp;}
+      if(sb.pit.has(l)){let pp=pitLoss+randn()*pitSd;lb+=nearSc?pp*(1-scDisc):pp;}
+      ca+=la;cb+=lb;
+      if(scOn&&l===scLap){const g=cb-ca;cb=ca+g*scBunch;}
+      const g2=cb-ca,aA=g2>0,close=Math.abs(g2)<dirtyGap;
+      const trail=aA?lb:la,lead=aA?la:lb,faster=(lead-trail)>margin,stuck=close&&!faster;
+      if(stuck){if(aA)cb+=dirtyS;else ca+=dirtyS;}
+    }
+    if((!aD)&&(bD||(ca<cb)))wins++;
+  }
+  return wins/n;
+}
+function renderDuel(){
+  const total=+$('laps').value,mods=models(),keys=Object.keys(mods);
+  if(keys.length<2)return;
+  const gap=+document.getElementById('d-gap').value;
+  document.getElementById('dv-gap').textContent=gap.toFixed(1)+' s';
+  const rivalPit=Math.round(total/2);
+  const rival=[[keys[0],rivalPit],[keys[1],total-rivalPit]];
+  const uPit=Math.max(6,rivalPit-6),oPit=Math.min(total-6,rivalPit+6);
+  const strat={undercut:[[keys[0],uPit],[keys[1],total-uPit]],passo:rival,overcut:[[keys[0],oPit],[keys[1],total-oPit]]};
+  const o={n:500,scProb:document.getElementById('d-sc').checked?0.7:0.15,rainProb:document.getElementById('d-rain').checked?0.6:0};
+  const order=['undercut','passo','overcut'],labels={undercut:'Undercut',passo:'Passo',overcut:'Overcut'},desc={undercut:'Box prima del rivale',passo:'Stessa sosta',overcut:'Box dopo il rivale'};
+  const probs=order.map(k=>duelWinProb(strat[k],rival,mods,total,gap,o));
+  const best=probs.indexOf(Math.max(...probs));
+  const cards=document.getElementById('d-cards');cards.innerHTML='';
+  order.forEach((k,i)=>{const d=document.createElement('div');d.className='dcard'+(i===best?' best':'');
+    d.innerHTML='<div class="dl">'+labels[k]+'</div><div class="dp">'+Math.round(probs[i]*100)+'%</div><div class="ds">'+desc[k]+'</div>';
+    cards.appendChild(d);});
+  document.getElementById('d-verdict').textContent='Mossa consigliata: '+labels[order[best]]+' — '+Math.round(probs[best]*100)+'% di finire davanti al rivale.';
+}
+['laps','stops','pit','soft-b','soft-d','med-b','med-d','hard-b','hard-d','d-gap'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('input',renderDuel);});
+['d-sc','d-rain'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',renderDuel);});
+renderDuel();
 
 // degradation chart
 const mods=models();
