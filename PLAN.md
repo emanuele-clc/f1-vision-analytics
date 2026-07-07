@@ -1,16 +1,16 @@
 # F1 Strategy & ML — Piano di progetto
 
-> Progetto di portfolio incentrato su **analisi dati, machine learning e planning strategico**
+> Progetto di **analisi dati, machine learning e ottimizzazione strategica**
 > in Formula 1, a partire dalla telemetria ufficiale (FastF1). Nessuna computer vision.
 
 ---
 
-## 1. Idea e valore per il portfolio
+## 1. Obiettivo del progetto
 
 Il progetto risponde a una domanda concreta da muretto box: **qual è la strategia gomme
 ottimale per questa gara, e quanto sono prevedibili i tempi sul giro?**
 
-Combina tre competenze che i recruiter tecnici cercano, in un dominio che cattura l'attenzione:
+Il progetto integra tre aree tecniche:
 
 - **Data engineering** — pipeline riproducibile da API reale (FastF1) a dataset puliti.
 - **Machine learning** — modello predittivo dei tempi sul giro con validazione seria (cross-validation, MAE/R²).
@@ -84,7 +84,7 @@ per la visualizzazione; `track_outline()` disegna il tracciato.
 circuito, Safety Car, meteo variabile.
 
 **M4 — Validazione** Confrontare la strategia consigliata con quella realmente adottata in gara e
-misurare il delta di tempo. È la sezione "Risultati" più forte del portfolio.
+misurare il delta di tempo, come misura oggettiva della qualità del modello.
 
 **M5 — Dashboard & storytelling** Rifinire la UI, aggiungere il replay animato, README con GIF e numeri.
 
@@ -99,8 +99,7 @@ misurare il delta di tempo. È la sezione "Risultati" più forte del portfolio.
 
 ---
 
-## 7. Come presentarlo
+## 7. Note conclusive
 
-README con un numero forte in alto (MAE del modello, delta della strategia ottimale vs reale),
-dashboard live su Streamlit/HuggingFace Spaces, e un breve write-up "come ho modellato il degrado
-e trovato la strategia ottimale". La storia da raccontare: *dai dati grezzi a una decisione di gara*.
+Il valore del progetto risiede nella pipeline completa: dai dati grezzi ufficiali a una decisione
+di strategia motivata e misurabile, con validazione contro la strategia realmente adottata in gara.

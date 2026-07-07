@@ -113,7 +113,7 @@ if load:
         raw = f1data.laps_dataframe(ses)
         laps = f1data.quicklaps(raw)
         st.session_state.update(
-            raw=raw, laps=laps, deg=features.degradation_table(laps),
+            ses=ses, raw=raw, laps=laps, deg=features.degradation_table(laps),
             meta=f"{int(year)} · {gp} · {session_type}",
         )
 
@@ -185,6 +185,53 @@ with tab_strat:
         kpi(m2, "Tempo gara stimato", f"{best.total_time_s/60:.2f} min")
 
 with tab_replay:
-    st.subheader("Replay posizioni")
-    st.info("Collega qui la visualizzazione: `f1va.replay.build_frames(session)` fornisce "
-            "le posizioni (X, Y) dei piloti nel tempo, e `track_outline(session)` il tracciato.")
+    st.subheader("Replay delle posizioni in pista")
+    st.caption("Ricostruzione delle posizioni (X, Y) dei piloti dalla telemetria FastF1.")
+    colr1, colr2 = st.columns([1, 3])
+    step = colr1.select_slider("Risoluzione (s)", [0.5, 1.0, 2.0, 3.0], value=2.0)
+    window = colr2.slider("Finestra da inizio sessione (minuti)", 1, 15, 4)
+    if st.button("Genera replay", type="primary"):
+        from f1va import replay as rp
+        with st.spinner("Ricostruisco le traiettorie…"):
+            outline = rp.track_outline(st.session_state["ses"])
+            frames = rp.build_frames(st.session_state["ses"], step_s=step)
+            frames = [f for f in frames if f["t"] <= window * 60]
+        st.session_state["replay"] = {"outline": outline, "frames": frames}
+
+    if "replay" in st.session_state:
+        rr = st.session_state["replay"]
+        outline, frames = rr["outline"], rr["frames"]
+        drivers = sorted({d for f in frames for d in f["cars"]})
+        base = go.Scatter(x=outline["x"], y=outline["y"], mode="lines",
+                          line=dict(color="#2A2A33", width=10), hoverinfo="skip", showlegend=False)
+
+        def scatter_at(fr):
+            xs = [fr["cars"][d]["x"] for d in drivers if d in fr["cars"]]
+            ys = [fr["cars"][d]["y"] for d in drivers if d in fr["cars"]]
+            labels = [d for d in drivers if d in fr["cars"]]
+            return go.Scatter(x=xs, y=ys, mode="markers+text", text=labels,
+                              textposition="top center", textfont=dict(size=9, color="#ddd"),
+                              marker=dict(size=11, color="#E10600",
+                                          line=dict(color="#0E0E10", width=1)),
+                              hoverinfo="text", showlegend=False)
+
+        fig = go.Figure(
+            data=[base, scatter_at(frames[0])],
+            frames=[go.Frame(data=[base, scatter_at(f)], name=f"{f['t']:.0f}") for f in frames],
+        )
+        fig.update_layout(
+            xaxis=dict(visible=False), yaxis=dict(visible=False, scaleanchor="x"),
+            updatemenus=[dict(type="buttons", showactive=False, x=0.02, y=1.12,
+                buttons=[dict(label="▶ Play", method="animate",
+                              args=[None, dict(frame=dict(duration=90, redraw=True),
+                                               fromcurrent=True)]),
+                         dict(label="⏸ Pausa", method="animate",
+                              args=[[None], dict(mode="immediate",
+                                                 frame=dict(duration=0, redraw=False))])])],
+            sliders=[dict(steps=[dict(method="animate", label=f"{f['t']:.0f}s",
+                          args=[[f"{f['t']:.0f}"], dict(mode="immediate",
+                                frame=dict(duration=0, redraw=True))]) for f in frames],
+                          x=0.08, len=0.9, currentvalue=dict(prefix="t = "))],
+        )
+        st.plotly_chart(plot_layout(fig, 520), use_container_width=True)
+        st.caption(f"{len(frames)} frame · {len(drivers)} piloti")

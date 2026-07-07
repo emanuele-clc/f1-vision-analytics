@@ -5,7 +5,10 @@ a partire dalla telemetria ufficiale (FastF1). Nessun video: tutto guidato dai d
 
 > 🔴 **Demo live (GitHub Pages):** https://emanuele-clc.github.io/f1-vision-analytics/ — l'ottimizzatore di strategia gira nel browser.
 
-> Progetto di portfolio. Vedi [`PLAN.md`](./PLAN.md) per roadmap e scelte di design.
+
+![Replay delle posizioni in pista](images/replay.gif)
+
+> Vedi [`PLAN.md`](./PLAN.md) per l'architettura e la roadmap del progetto.
 
 ## Cosa fa
 
