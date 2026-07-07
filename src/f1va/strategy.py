@@ -58,9 +58,18 @@ def _compositions(total: int, parts: int, min_each: int):
             yield (first, *rest)
 
 
-def enumerate_strategies(total_laps, compounds, max_stops, min_stint=MIN_STINT):
-    """Genera strategie plausibili con 1..max_stops soste."""
+def enumerate_strategies(total_laps, compounds, max_stops, min_stint=MIN_STINT, max_stint=None):
+    """Genera strategie plausibili con 1..max_stops soste.
+
+    max_stint: durata massima di uno stint (int uguale per tutte, oppure dict per mescola).
+    Serve a impedire stint irrealistici piu lunghi di quanto la gomma possa durare.
+    """
     from itertools import product
+
+    def cap(compound):
+        if max_stint is None:
+            return 10 ** 9
+        return (max_stint.get(compound, 10 ** 9) if isinstance(max_stint, dict) else max_stint)
 
     for n_stops in range(1, max_stops + 1):
         n_stints = n_stops + 1
@@ -69,15 +78,18 @@ def enumerate_strategies(total_laps, compounds, max_stops, min_stint=MIN_STINT):
                 # evita due stint consecutivi con la stessa mescola (inutile)
                 if any(combo[i] == combo[i + 1] for i in range(len(combo) - 1)):
                     continue
-                yield tuple(zip(combo, lengths))
+                stints = tuple(zip(combo, lengths))
+                if any(length > cap(comp) for comp, length in stints):
+                    continue
+                yield stints
 
 
 def optimize_strategy(total_laps, compounds, tyre_models, max_stops=2,
                       pit_loss=DEFAULT_PIT_LOSS, require_two_compounds=True,
-                      min_stint=MIN_STINT) -> StrategyResult:
+                      min_stint=MIN_STINT, max_stint=None) -> StrategyResult:
     """Trova la strategia col tempo gara minimo (ricerca esaustiva sui piani plausibili)."""
     best: StrategyResult | None = None
-    for stints in enumerate_strategies(total_laps, compounds, max_stops, min_stint):
+    for stints in enumerate_strategies(total_laps, compounds, max_stops, min_stint, max_stint):
         if require_two_compounds and len({c for c, _ in stints}) < 2:
             continue
         t = simulate_strategy(total_laps, stints, tyre_models, pit_loss)

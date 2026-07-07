@@ -10,6 +10,25 @@ from .features import fuel_corrected_degradation
 from .strategy import fit_tyre_models, optimize_strategy, simulate_strategy
 
 
+def _max_stint_from_laps(laps: pd.DataFrame) -> dict:
+    """Durata massima realistica per mescola = giri effettivamente percorsi + margine."""
+    life = laps.dropna(subset=["TyreLife"]).groupby(
+        laps["Compound"].astype(str).str.upper())["TyreLife"].max()
+    return {c: int(v) + 2 for c, v in life.items()}
+
+
+def _robust_optimize(total, keys, tyre, pit_loss, max_stint):
+    """Ottimizza con vincoli realistici; allenta i vincoli solo se non c'e soluzione."""
+    for stops, min_st, cap in [(2, 8, max_stint), (3, 8, max_stint),
+                               (3, 6, max_stint), (3, 5, None)]:
+        try:
+            return optimize_strategy(total, keys, tyre, max_stops=stops,
+                                     pit_loss=pit_loss, min_stint=min_st, max_stint=cap)
+        except ValueError:
+            continue
+    return optimize_strategy(total, keys, tyre, max_stops=3, pit_loss=pit_loss, min_stint=5)
+
+
 def driver_stints(laps: pd.DataFrame, driver: str) -> list[tuple[str, int]]:
     """Stint realmente percorsi da un pilota: (mescola, numero di giri)."""
     d = laps[laps["Driver"] == driver].sort_values("LapNumber")
@@ -34,7 +53,8 @@ def backtest_race(laps: pd.DataFrame, total_laps: int | None = None,
     if total_laps is None:
         total_laps = int(laps["LapNumber"].max())
 
-    recommended = optimize_strategy(total_laps, keys, tyre, max_stops=max_stops, pit_loss=pit_loss)
+    max_stint = _max_stint_from_laps(laps)
+    recommended = _robust_optimize(total_laps, keys, tyre, pit_loss, max_stint)
 
     opt_cache: dict[int, float] = {}
     rows = []
@@ -49,8 +69,7 @@ def backtest_race(laps: pd.DataFrame, total_laps: int | None = None,
             continue
         actual_time = simulate_strategy(run, actual, tyre, pit_loss=pit_loss)
         if run not in opt_cache:
-            opt_cache[run] = optimize_strategy(run, keys, tyre, max_stops=max_stops,
-                                               pit_loss=pit_loss).total_time_s
+            opt_cache[run] = _robust_optimize(run, keys, tyre, pit_loss, max_stint).total_time_s
         opt_time = opt_cache[run]
         rows.append({
             "driver": driver,
