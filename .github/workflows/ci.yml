@@ -26,4 +26,4 @@ jobs:
         run: ruff check src scripts apps tests
 
       - name: Run tests
-        run: pytest tests/test_strategy.py tests/test_features.py -q
+        run: pytest tests/ -q

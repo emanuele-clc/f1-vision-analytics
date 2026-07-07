@@ -21,6 +21,10 @@ a partire dalla telemetria ufficiale (FastF1). Nessun video: tutto guidato dai d
   degrado e pit-stop) e restituisce distribuzione dei tempi e probabilità di battere le alternative.
 - 📻 **Strategia live** — durante la gara ricalcola a ogni giro la decisione (restare fuori / box,
   quando e con quale mescola) dallo stato corrente di gomme e giri.
+- 🏟️ **Simulazione a campo pieno** — tutte le auto insieme, con posizione in pista e aria sporca:
+  distribuzione delle posizioni finali e probabilita di vittoria/podio/punti.
+- 🧪 **Backtesting** — confronta la strategia consigliata con quella realmente adottata in gare
+  passate e quantifica il tempo lasciato sul tavolo: la validazione piu concreta del motore.
 - 🖥️ **Dashboard** — interfaccia Streamlit: degrado, strategia consigliata, replay.
 
 ## Quickstart
@@ -63,6 +67,27 @@ L'importanza delle feature conferma la fisica attesa: eta gomma, poi mescola, ca
 > `python scripts/train_models.py --synthetic --heavy` (rigoroso: dataset ampio, ricerca
 > iperparametri estesa, curva di apprendimento, ensemble — alcuni minuti).
 
+## Validazione: backtesting su gare reali
+
+La prova del nove di un motore di strategia: nelle gare passate, avrebbe fatto la chiamata giusta?
+Il modulo `backtest` ricostruisce la strategia reale di ogni pilota, la confronta con l'ottimo del
+motore e quantifica il tempo perso.
+
+```bash
+python scripts/backtest.py --synthetic
+python scripts/backtest.py --races 2024:Monza 2024:Silverstone 2024:Spa   # dati reali
+```
+
+## Simulazione a campo pieno
+
+Il modulo `field` simula tutte le auto insieme: la posizione dipende dal tempo cumulato, chi segue
+da vicino perde tempo in aria sporca e fatica a passare. Monte Carlo su Safety Car, ritiri e pioggia,
+con la distribuzione delle posizioni finali per ogni auto.
+
+```bash
+python scripts/simulate_field.py --synthetic
+```
+
 ## Duello testa a testa e imprevisti
 
 Oltre alla strategia in solitaria, il modulo `duel` simula un **confronto diretto con un rivale**
@@ -103,6 +128,9 @@ src/f1va/
 ├── strategy.py     # simulatore e ottimizzatore di strategia (planning)
 ├── montecarlo.py   # simulazione sotto incertezza (Safety Car, varianza)
 ├── outcome.py      # previsione posizione finale / punti
+├── duel.py         # duello 1v1 (aria sporca, undercut/overcut, imprevisti)
+├── field.py        # simulazione a campo pieno (20 auto)
+├── backtest.py     # validazione vs strategie reali
 ├── replay.py       # ricostruzione posizioni in pista per il replay
 └── config.py       # config YAML
 apps/dashboard.py   # dashboard Streamlit
