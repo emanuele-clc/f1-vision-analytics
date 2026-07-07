@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Dati e output (non versionare)
+.fastf1_cache/
+data/samples/*.mp4
+data/samples/*.mov
+data/samples/*.mkv
+out/
+weights/*.pt
+
+# Sistema
+.DS_Store

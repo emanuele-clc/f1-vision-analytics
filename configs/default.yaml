@@ -1,0 +1,35 @@
+# Configurazione pipeline F1 Vision Analytics
+
+detection:
+  model: "yolo11n.pt"        # sostituisci con il tuo checkpoint fine-tunato (es. weights/f1_yolo.pt)
+  conf: 0.25
+  iou: 0.5
+  classes: null              # null = tutte; per il tuo modello F1 usa es. [0] = car
+  device: "auto"             # "auto" | "cpu" | "cuda:0"
+
+tracking:
+  tracker: "bytetrack"       # bytetrack | botsort
+  track_thresh: 0.25
+  match_thresh: 0.8
+  track_buffer: 30
+
+homography:
+  # 4+ corrispondenze immagine (px) -> mappa circuito (unità mappa).
+  # Vanno calibrate per ogni inquadratura/circuito. Esempio placeholder:
+  image_points:  [[0, 0], [1920, 0], [1920, 1080], [0, 1080]]
+  world_points:  [[0, 0], [100, 0], [100, 60], [0, 60]]
+  meters_per_world_unit: 1.0
+
+speed:
+  smoothing: "kalman"        # kalman | savgol | none
+  fps: null                  # null = leggi dal video
+  max_speed_kmh: 380         # clip di sicurezza
+
+strategy:
+  fastf1_cache: ".fastf1_cache"
+  tyre_deg_window: 5         # giri per la regressione del degrado
+
+output:
+  save_video: true
+  save_csv: true
+  dir: "out"

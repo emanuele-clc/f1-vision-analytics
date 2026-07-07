@@ -1,0 +1,22 @@
+# Core CV / ML
+ultralytics>=8.3.0        # YOLO11 detection + tracking (BoT-SORT)
+supervision>=0.24.0       # ByteTrack, annotatori, utility
+opencv-python>=4.10.0
+numpy>=1.26
+scipy>=1.13               # Kalman/smoothing
+
+# Dati F1 reali
+fastf1>=3.4.0
+
+# Analisi & viz
+pandas>=2.2
+plotly>=5.22
+matplotlib>=3.9
+
+# Dashboard
+streamlit>=1.37
+
+# Config & qualità
+pyyaml>=6.0
+ruff>=0.6
+pytest>=8.0
