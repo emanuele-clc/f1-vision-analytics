@@ -15,3 +15,6 @@ weights/*.pt
 
 # Sistema
 .DS_Store
+
+# Pesi modelli scaricati
+*.pt
