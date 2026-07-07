@@ -63,6 +63,24 @@ L'importanza delle feature conferma la fisica attesa: eta gomma, poi mescola, ca
 > `python scripts/train_models.py --synthetic --heavy` (rigoroso: dataset ampio, ricerca
 > iperparametri estesa, curva di apprendimento, ensemble — alcuni minuti).
 
+## Dati reali FastF1
+
+Tutto funziona offline con dati sintetici, ma è pensato per i **dati reali**. Sul tuo PC con
+rete, scarica una sessione una volta sola e poi lavora sul CSV (anche offline):
+
+```bash
+# 1) scarica e salva la gara reale (richiede rete, solo la prima volta)
+python scripts/fetch_data.py --year 2024 --gp "Monza" --session R
+
+# 2) usa i dati reali in tutti gli strumenti
+python scripts/train_models.py     --csv data/2024_Monza_R.csv --tune
+python scripts/optimize_strategy.py --csv data/2024_Monza_R.csv --laps 53
+python scripts/simulate_race.py     --csv data/2024_Monza_R.csv --sc-prob 0.4
+python scripts/live_strategy.py     --csv data/2024_Monza_R.csv --start SOFT
+```
+
+La dashboard Streamlit carica direttamente le sessioni reali dalla barra laterale.
+
 ## Struttura
 
 ```

@@ -52,3 +52,8 @@ def quicklaps(df: pd.DataFrame, threshold: float = 1.07) -> pd.DataFrame:
         return clean
     best = clean["laptime_s"].min()
     return clean[clean["laptime_s"] <= best * threshold].reset_index(drop=True)
+
+
+def load_laps_csv(path: str) -> pd.DataFrame:
+    """Rilegge un CSV di giri salvato da scripts/fetch_data.py."""
+    return pd.read_csv(path)

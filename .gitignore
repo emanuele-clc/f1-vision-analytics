@@ -21,3 +21,6 @@ weights/*.pt
 
 # Modelli allenati
 models/*.joblib
+
+# CSV di dati scaricati (rigenerabili con fetch_data.py)
+data/*.csv

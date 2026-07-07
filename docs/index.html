@@ -161,6 +161,25 @@ footer{border-top:1px solid var(--border);padding:44px 0;text-align:center;color
 footer a{color:#fff}
 .cta-final{position:relative;text-align:center;background:linear-gradient(160deg,rgba(225,6,0,.16),rgba(122,11,255,.08));border:1px solid var(--border);border-radius:4px;padding:58px 24px;overflow:hidden}
 .cta-final::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),transparent)}
+
+/* pit-wall console */
+.pitwall{display:grid;grid-template-columns:300px 1fr;gap:26px}
+@media(max-width:820px){.pitwall{grid-template-columns:1fr}}
+.console{position:relative;background:radial-gradient(120% 100% at 50% 0%,#141419,#0a0a0d);border:1px solid var(--border);border-radius:6px;padding:26px;overflow:hidden}
+.console::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 1px,transparent 1px 3px);pointer-events:none}
+.lamp{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.lamp .b{width:12px;height:12px;border-radius:50%}
+.status{font-family:'Space Grotesk';font-weight:800;font-size:clamp(1.7rem,4vw,2.6rem);line-height:1.05;text-transform:uppercase;letter-spacing:-.01em}
+.status .sub{display:block;font-family:var(--mono);font-size:.9rem;font-weight:500;letter-spacing:.04em;margin-top:10px;color:var(--muted);text-transform:none}
+.readouts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
+.ro{background:#0e0e13;border:1px solid var(--border);border-radius:3px;padding:12px 14px}
+.ro .l{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.ro .v{font-family:var(--mono);font-weight:700;font-size:1.15rem;margin-top:3px;color:#fff}
+.wall-ctrl .control label{font-size:.7rem}
+.used-row{display:flex;gap:8px;margin-top:6px}
+.used-chip{flex:1;text-align:center;padding:8px;border-radius:3px;border:1px solid var(--border);font-family:var(--mono);font-size:.78rem;cursor:pointer;user-select:none;color:var(--muted)}
+.used-chip.on{color:#111;font-weight:700}
+
 </style>
 </head>
 <body>
@@ -170,7 +189,7 @@ footer a{color:#fff}
 <nav><div class="wrap">
   <div class="brand"><span class="dot"></span> F1 Strategy&nbsp;&amp;&nbsp;ML</div>
   <div class="nav-links">
-    <a href="#demo">Demo</a><a href="#pace">Degrado</a><a href="#metodo">Metodo</a><a href="#ml">ML</a><a href="#features">Features</a><a href="#stack">Stack</a>
+    <a href="#demo">Demo</a><a href="#pitwall">Pit-wall</a><a href="#pace">Degrado</a><a href="#metodo">Metodo</a><a href="#ml">ML</a><a href="#features">Features</a><a href="#stack">Stack</a>
   </div>
   <a class="btn btn-primary" href="https://github.com/emanuele-clc/f1-vision-analytics" target="_blank">GitHub ↗</a>
 </div></nav>
@@ -239,6 +258,38 @@ footer a{color:#fff}
     </div>
    </div>
    <p style="color:var(--muted);font-size:.82rem;margin-top:18px;border-top:1px solid var(--border);padding-top:14px">I valori di base e degrado precaricati sono <b>rappresentativi</b> di ciascun circuito. Nella pipeline Python gli stessi parametri vengono <b>stimati dai dati reali FastF1</b> della sessione scelta.</p>  </div>
+</div></section>
+
+<section id="pitwall"><div class="wrap reveal">
+  <div class="eyebrow">Pit-wall live</div>
+  <div class="h2">La decisione, giro dopo giro</div>
+  <p class="lead">Muovi il giro corrente: la console ricalcola in tempo reale se restare in pista o andare ai box, quando e con quale mescola — la stessa logica dello strumento live in Python.</p>
+  <div class="demo" style="margin-top:30px">
+   <div class="pitwall">
+    <div class="wall-ctrl">
+      <div class="control"><label>Giro corrente <b id="wv-lap">15</b></label><input type="range" id="w-lap" min="1" max="53" value="15"></div>
+      <div class="control"><label>Gomma attuale <b id="wv-comp">SOFT</b></label>
+        <select id="w-comp"><option>SOFT</option><option>MEDIUM</option><option>HARD</option></select></div>
+      <div class="control"><label>Età gomma <b id="wv-age">15</b> giri</label><input type="range" id="w-age" min="0" max="40" value="15"></div>
+      <div class="control"><label>Mescole già usate</label>
+        <div class="used-row" id="w-used">
+          <div class="used-chip" data-c="SOFT">SOFT</div>
+          <div class="used-chip" data-c="MEDIUM">MEDIUM</div>
+          <div class="used-chip" data-c="HARD">HARD</div>
+        </div>
+      </div>
+    </div>
+    <div class="console">
+      <div class="lamp"><span class="b" id="w-lamp"></span> <span id="w-lampt">PIT-WALL</span></div>
+      <div class="status" id="w-status">—<span class="sub" id="w-sub"></span></div>
+      <div class="readouts">
+        <div class="ro"><div class="l">Giri rimasti</div><div class="v" id="w-remain">—</div></div>
+        <div class="ro"><div class="l">Prossima sosta</div><div class="v" id="w-nextpit">—</div></div>
+        <div class="ro"><div class="l">Tempo residuo stim.</div><div class="v" id="w-time">—</div></div>
+      </div>
+    </div>
+   </div>
+  </div>
 </div></section>
 
 <section id="pace"><div class="wrap reveal">
@@ -431,9 +482,93 @@ function applyPreset(){
   document.getElementById('track-tag').textContent=p.name;
   setTrack(p.track);
   render();
+  const wl=document.getElementById('w-lap'); if(wl){ wl.max=p.laps; if(+wl.value>p.laps) wl.value=p.laps; renderWall(); }
 }
 $('circuit').addEventListener('change',applyPreset);
 applyPreset();
+
+/* ---- Pit-wall live ---- */
+const wUsed = new Set(['SOFT']);
+function* splitsFirst(total,parts,minRest){
+  if(parts===1){ if(total>=1) yield [total]; return; }
+  for(let f=1; f<=total-minRest*(parts-1); f++)
+    for(const r of comps(total-f,parts-1,minRest)) yield [f,...r];
+}
+function liveRecommend(total,curLap,curComp,curAge,used,mods,pit,maxStops=2,minStint=5){
+  const remaining=total-curLap; if(remaining<1) return null;
+  const keys=Object.keys(mods); let best=null;
+  for(let k=0;k<=maxStops;k++){
+    for(const parts of splitsFirst(remaining,k+1,minStint)){
+      const stay=parts[0], newLens=parts.slice(1);
+      const tc=Math.pow(keys.length,k);
+      for(let ci=0;ci<tc;ci++){
+        let x=ci; const combo=[];
+        for(let j=0;j<k;j++){combo.push(keys[x%keys.length]); x=Math.floor(x/keys.length);}
+        const seq=[curComp,...combo]; let ok=true;
+        for(let j=0;j<seq.length-1;j++) if(seq[j]===seq[j+1]) ok=false;
+        if(!ok) continue;
+        const u=new Set([...used,...seq]); if(u.size<2) continue;
+        const m=mods[curComp]; let t=0;
+        for(let a=curAge;a<curAge+stay;a++) t+=m.base+m.deg*a;
+        for(let j=0;j<combo.length;j++){const mm=mods[combo[j]],L=newLens[j];for(let a=0;a<L;a++)t+=mm.base+mm.deg*a;}
+        t+=pit*combo.length;
+        if(best===null||t<best.t) best={t,stay,newStints:combo.map((c,j)=>[c,newLens[j]])};
+      }
+    }
+  }
+  return best;
+}
+function paintChips(){
+  document.querySelectorAll('#w-used .used-chip').forEach(ch=>{
+    const c=ch.dataset.c, on=wUsed.has(c), col=(COMP.find(x=>x.k===c)||{}).color||'#666';
+    ch.classList.toggle('on',on); ch.style.background=on?col:'transparent';
+    ch.style.color=on?'#111':'#93939f';
+  });
+}
+function setStatus(main,subt,color){
+  const st=document.getElementById('w-status');
+  st.childNodes[0].nodeValue=main; st.style.color=color;
+  document.getElementById('w-sub').textContent=subt;
+}
+function renderWall(){
+  const total=+$('laps').value;
+  const lapEl=document.getElementById('w-lap'); lapEl.max=total;
+  const curLap=Math.min(+lapEl.value,total-1);
+  const curComp=document.getElementById('w-comp').value;
+  const curAge=+document.getElementById('w-age').value;
+  document.getElementById('wv-lap').textContent=curLap;
+  document.getElementById('wv-comp').textContent=curComp;
+  document.getElementById('wv-age').textContent=curAge;
+  wUsed.add(curComp); paintChips();
+  const best=liveRecommend(total,curLap,curComp,curAge,wUsed,models(),+$('pit').value);
+  const lamp=document.getElementById('w-lamp'), lampt=document.getElementById('w-lampt');
+  document.getElementById('w-remain').textContent=(total-curLap)+' giri';
+  if(!best){ setStatus('—','','#fff'); return; }
+  document.getElementById('w-time').textContent=(best.t/60).toFixed(2)+' min';
+  if(best.newStints.length===0){
+    lamp.style.background='var(--green)'; lampt.textContent='TRACK CLEAR';
+    setStatus('STAY OUT','Porta la gomma fino alla bandiera a scacchi','var(--green)');
+    document.getElementById('w-nextpit').textContent='—';
+  } else if(best.stay<=1){
+    lamp.style.background='var(--red)'; lampt.textContent='BOX THIS LAP';
+    setStatus('BOX · BOX','Monta '+best.newStints[0][0]+' adesso','#ff5b54');
+    document.getElementById('w-nextpit').textContent='ORA → '+best.newStints[0][0];
+  } else {
+    lamp.style.background='var(--medium)'; lampt.textContent='HOLD';
+    const pl=curLap+best.stay;
+    setStatus('STAY OUT · '+best.stay+' GIRI','Poi box al giro '+pl+' → '+best.newStints[0][0],'var(--medium)');
+    document.getElementById('w-nextpit').textContent='Giro '+pl+' → '+best.newStints[0][0];
+  }
+}
+['w-lap','w-age'].forEach(id=>document.getElementById(id).addEventListener('input',renderWall));
+document.getElementById('w-comp').addEventListener('change',renderWall);
+document.querySelectorAll('#w-used .used-chip').forEach(ch=>ch.addEventListener('click',()=>{
+  const c=ch.dataset.c;
+  if(c===document.getElementById('w-comp').value) return; // la gomma attuale resta usata
+  if(wUsed.has(c)) wUsed.delete(c); else wUsed.add(c);
+  renderWall();
+}));
+renderWall();
 
 // degradation chart
 const mods=models();

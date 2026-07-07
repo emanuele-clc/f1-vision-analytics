@@ -17,16 +17,20 @@ from f1va import features, strategy  # noqa: E402
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--year", type=int, required=True)
-    ap.add_argument("--gp", required=True)
+    ap.add_argument("--csv", default=None, help="usa un CSV reale (da fetch_data.py)")
+    ap.add_argument("--year", type=int, default=2024)
+    ap.add_argument("--gp", default="Monza")
     ap.add_argument("--laps", type=int, required=True)
     ap.add_argument("--max-stops", type=int, default=2)
     ap.add_argument("--fuel-correct", action="store_true",
                     help="separa il degrado gomma dall'effetto carburante")
     args = ap.parse_args()
 
-    ses = f1data.load_session(args.year, args.gp, "R")
-    laps = f1data.quicklaps(f1data.laps_dataframe(ses))
+    if args.csv:
+        laps = f1data.quicklaps(f1data.load_laps_csv(args.csv))
+    else:
+        ses = f1data.load_session(args.year, args.gp, "R")
+        laps = f1data.quicklaps(f1data.laps_dataframe(ses))
     deg = (features.fuel_corrected_degradation(laps) if args.fuel_correct
            else features.degradation_table(laps))
     print("Degrado stimato:\n", deg.to_string(index=False))

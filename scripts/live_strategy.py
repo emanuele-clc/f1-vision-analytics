@@ -20,6 +20,10 @@ from f1va.live import RaceState, recommend  # noqa: E402
 
 
 def get_tyre_models(args):
+    if args.csv:
+        from f1va import data as f1data
+        laps = f1data.quicklaps(f1data.load_laps_csv(args.csv))
+        return strategy.fit_tyre_models(features.fuel_corrected_degradation(laps))
     if args.synthetic or (args.year is None):
         from f1va import synthetic
         laps = synthetic.generate_race(n_drivers=20, laps=args.laps, seed=0)
@@ -33,6 +37,7 @@ def get_tyre_models(args):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--synthetic", action="store_true")
+    ap.add_argument("--csv", default=None, help="usa un CSV reale (da fetch_data.py)")
     ap.add_argument("--year", type=int, default=None)
     ap.add_argument("--gp", default="Monza")
     ap.add_argument("--laps", type=int, default=53)

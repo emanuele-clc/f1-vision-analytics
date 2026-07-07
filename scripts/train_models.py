@@ -25,6 +25,10 @@ from f1va import features, models  # noqa: E402
 
 
 def get_laps(args):
+    if args.csv:
+        from f1va import data as f1data
+        print(f"Dati: CSV {args.csv}")
+        return f1data.quicklaps(f1data.load_laps_csv(args.csv))
     if args.synthetic:
         from f1va import synthetic
         print(f"Dati: stagione sintetica ({args.races} gare, offline)")
@@ -39,6 +43,7 @@ def get_laps(args):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--synthetic", action="store_true")
+    ap.add_argument("--csv", default=None, help="usa un CSV reale (da fetch_data.py)")
     ap.add_argument("--tune", action="store_true", help="ricerca iperparametri (piu lenta)")
     ap.add_argument("--heavy", action="store_true",
                     help="training rigoroso: dataset ampio, ricerca estesa, curva di apprendimento, ensemble")

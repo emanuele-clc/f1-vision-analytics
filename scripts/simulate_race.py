@@ -20,6 +20,9 @@ from f1va.montecarlo import RaceConditions, optimize_mc  # noqa: E402
 
 
 def get_deg(args):
+    if args.csv:
+        from f1va import data as f1data
+        return features.fuel_corrected_degradation(f1data.quicklaps(f1data.load_laps_csv(args.csv)))
     if args.synthetic:
         from f1va import synthetic
         laps = synthetic.generate_race(n_drivers=20, laps=args.laps, seed=0)
@@ -33,6 +36,7 @@ def get_deg(args):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--synthetic", action="store_true")
+    ap.add_argument("--csv", default=None, help="usa un CSV reale (da fetch_data.py)")
     ap.add_argument("--year", type=int, default=2024)
     ap.add_argument("--gp", default="Monza")
     ap.add_argument("--laps", type=int, default=53)
