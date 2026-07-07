@@ -97,3 +97,47 @@ def fuel_corrected_degradation(laps: pd.DataFrame, min_laps: int = 4) -> pd.Data
             "laps": int((comp == c).sum()),
         })
     return pd.DataFrame(rows).reset_index(drop=True)
+
+
+def quadratic_degradation(laps: pd.DataFrame, min_laps: int = 8) -> pd.DataFrame:
+    """Degrado NON lineare: base + deg*eta + deg2*eta^2, separato dal carburante.
+
+    L'usura reale accelera sugli stint lunghi: il termine quadratico lo cattura, evitando
+    che l'ottimizzatore proponga stint irrealisticamente lunghi. Compounds con pochi giri
+    ricadono sul modello lineare (deg2 = 0).
+    """
+    df = laps.dropna(subset=["laptime_s", "TyreLife", "LapNumber"]).copy()
+    comp = df["Compound"].astype(str).str.upper()
+    compounds = [c for c in sorted(comp.unique())
+                 if (comp == c).sum() >= min_laps and df.loc[comp == c, "TyreLife"].nunique() >= 3]
+    if not compounds:
+        return pd.DataFrame(columns=["compound", "base_s", "deg_s_per_lap",
+                                     "deg2_s_per_lap2", "fuel_s_per_lap", "laps"])
+    mask = comp.isin(compounds)
+    df, comp = df[mask], comp[mask]
+    life = df["TyreLife"].to_numpy(float)
+    lap = df["LapNumber"].to_numpy(float)
+
+    cols, names = [], []
+    for c in compounds:
+        ind = (comp == c).to_numpy(float)
+        cols += [ind, ind * life, ind * life * life]
+        names += [("base", c), ("deg", c), ("deg2", c)]
+    cols.append(lap)
+    names.append(("fuel", None))
+    design = np.column_stack(cols)
+    coef, *_ = np.linalg.lstsq(design, df["laptime_s"].to_numpy(float), rcond=None)
+    fuel = float(coef[names.index(("fuel", None))])
+
+    rows = []
+    for c in compounds:
+        deg2 = float(coef[names.index(("deg2", c))])
+        rows.append({
+            "compound": c,
+            "base_s": round(float(coef[names.index(("base", c))]), 3),
+            "deg_s_per_lap": round(float(coef[names.index(("deg", c))]), 4),
+            "deg2_s_per_lap2": round(max(deg2, 0.0), 5),   # usura non negativa
+            "fuel_s_per_lap": round(fuel, 4),
+            "laps": int((comp == c).sum()),
+        })
+    return pd.DataFrame(rows).reset_index(drop=True)

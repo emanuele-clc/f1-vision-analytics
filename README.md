@@ -140,8 +140,10 @@ tests/              # unit test (strategia + feature)
 
 ## Come funziona la strategia
 
-Il degrado di ogni mescola è modellato come `tempo_giro = base + degrado * età_gomma`, stimato
-per regressione dai dati reali. Il simulatore somma i tempi degli stint più il tempo perso ai box,
+Il degrado di ogni mescola è modellato come `tempo_giro = base + degrado·età + degrado2·età²`
+(l'usura accelera sugli stint lunghi), stimato per regressione dai dati reali con correzione del
+carburante. Gli stint sono vincolati alla durata realmente osservata delle gomme e le gare bagnate
+vengono escluse dal backtest (il modello a secco non si applica). Il simulatore somma i tempi degli stint più il tempo perso ai box,
 e l'ottimizzatore esplora tutte le combinazioni plausibili di soste, mescole e lunghezze
 per trovare quella col tempo gara minimo (rispettando la regola delle due mescole).
 

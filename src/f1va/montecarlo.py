@@ -28,8 +28,10 @@ def _sample_times(stints, tyre_models, cond: RaceConditions, n: int, rng) -> np.
     """Vettoriale: n tempi gara campionati per una strategia."""
     lengths = np.array([ln for _, ln in stints], dtype=float)
     tri = lengths * (lengths - 1) / 2.0                      # somma delle eta 0..L-1
+    tri2 = lengths * (lengths - 1) * (2 * lengths - 1) / 6.0  # somma dei quadrati delle eta
 
     det = sum(tyre_models[c].base * ln + tyre_models[c].deg * tri[i]
+              + getattr(tyre_models[c], "deg2", 0.0) * tri2[i]
               for i, (c, ln) in enumerate(stints))
     total = np.full(n, det)
 

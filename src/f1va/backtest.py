@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from .features import fuel_corrected_degradation
+from .features import fuel_corrected_degradation, quadratic_degradation
 from .strategy import fit_tyre_models, optimize_strategy, simulate_strategy
 
 
@@ -46,7 +46,16 @@ def backtest_race(laps: pd.DataFrame, total_laps: int | None = None,
     Ritorna il piano consigliato, un DataFrame per pilota (piano reale, tempo reale
     stimato, tempo ottimo, delta) e metriche aggregate.
     """
-    tyre = fit_tyre_models(fuel_corrected_degradation(laps))
+    comp_all = laps["Compound"].astype(str).str.upper()
+    wet_frac = comp_all.isin(["INTERMEDIATE", "WET"]).mean()
+    if wet_frac > 0.15:                       # gara bagnata: modello a secco non applicabile
+        return {"tyre": {}, "recommended": None, "drivers": pd.DataFrame(),
+                "metrics": {}, "wet": True}
+
+    deg = quadratic_degradation(laps)
+    if deg.empty:
+        deg = fuel_corrected_degradation(laps)
+    tyre = fit_tyre_models(deg)
     keys = list(tyre)
     if len(keys) < 2:
         return {"tyre": tyre, "recommended": None, "drivers": pd.DataFrame(), "metrics": {}}
@@ -98,6 +107,10 @@ def backtest_sessions(sessions: list[tuple[str, pd.DataFrame]], max_stops: int =
     rows = []
     for label, laps in sessions:
         res = backtest_race(laps, max_stops=max_stops)
+        if res.get("wet"):
+            rows.append({"gara": label, "consigliata": "— gara bagnata (saltata) —",
+                         "match_soste_%": None, "delta_mediano_s": None, "piloti": 0})
+            continue
         m = res["metrics"]
         if not m:
             continue

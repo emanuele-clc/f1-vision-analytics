@@ -15,14 +15,15 @@ MIN_STINT = 5            # giri minimi credibili per uno stint
 
 @dataclass(frozen=True)
 class TyreModel:
-    """Tempo sul giro modellato come base + degrado * eta_gomma (secondi)."""
+    """Tempo sul giro: base + degrado*eta + degrado2*eta^2 (l'usura accelera)."""
 
     base: float
     deg: float
+    deg2: float = 0.0
 
     def stint_time(self, length: int) -> float:
         """Tempo totale di uno stint di `length` giri (eta da 0 a length-1)."""
-        return sum(self.base + self.deg * age for age in range(length))
+        return sum(self.base + self.deg * age + self.deg2 * age * age for age in range(length))
 
 
 @dataclass(frozen=True)
@@ -103,7 +104,9 @@ def optimize_strategy(total_laps, compounds, tyre_models, max_stops=2,
 def fit_tyre_models(deg_table: pd.DataFrame) -> dict[str, TyreModel]:
     """Converte la tabella di degrado (features.degradation_table) in TyreModel per mescola."""
     return {
-        row["compound"]: TyreModel(base=float(row["base_s"]), deg=float(row["deg_s_per_lap"]))
+        row["compound"]: TyreModel(
+            base=float(row["base_s"]), deg=float(row["deg_s_per_lap"]),
+            deg2=float(row.get("deg2_s_per_lap2", 0.0)))
         for _, row in deg_table.iterrows()
     }
 

@@ -37,10 +37,11 @@ def _lap_schedule(stints, tyre_models, total_laps):
     times, pit_laps, lap = [], set(), 0
     for i, (compound, length) in enumerate(stints):
         m = tyre_models[compound]
+        d2 = getattr(m, "deg2", 0.0)
         for age in range(length):
             if lap >= total_laps:
                 break
-            times.append(m.base + m.deg * age)
+            times.append(m.base + m.deg * age + d2 * age * age)
             lap += 1
         if i < len(stints) - 1:
             pit_laps.add(lap - 1)               # sosta eseguita dopo questo giro
