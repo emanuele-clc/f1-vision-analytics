@@ -1,71 +1,62 @@
-# 🏎️ F1 Vision Analytics
+# 🏎️ F1 Strategy & ML
 
-Pipeline end-to-end che trasforma video di Formula 1 in analitica quantitativa:
-**detection → tracking → omografia → cinematica → strategia**, con validazione contro la
-telemetria ufficiale (FastF1).
+Analisi dati, machine learning e ottimizzazione della strategia di gara in Formula 1,
+a partire dalla telemetria ufficiale (FastF1). Nessun video: tutto guidato dai dati.
 
-> Progetto di portfolio. Vedi [`PLAN.md`](./PLAN.md) per roadmap, milestone e scelte di design.
+> Progetto di portfolio. Vedi [`PLAN.md`](./PLAN.md) per roadmap e scelte di design.
 
-## Demo (placeholder)
+## Cosa fa
 
-_Inserisci qui una GIF: onboard con bounding box + mini-mappa bird's-eye + curva velocità ricostruita._
-
-## Funzionalità
-
-- 🎯 **Detection** delle monoposto con YOLO11 (fine-tunabile su frame F1).
-- 🔗 **Multi-object tracking** con ByteTrack (ID persistenti).
-- 🗺️ **Omografia** frame → mappa 2D del circuito (bird's-eye).
-- 📈 **Cinematica**: velocità, gap e racing line dai movimenti proiettati (smoothing/Kalman).
-- 🧠 **Strategia**: stint gomme, degrado, finestre di pit, undercut/overcut (dati FastF1).
-- ✅ **Validazione**: velocità stimata dal video vs telemetria reale (errore %).
-- 📊 **Dashboard** Streamlit interattiva.
+- 📥 **Data layer** — scarica sessioni reali via FastF1 e le pulisce in DataFrame pronti all'uso.
+- 🧪 **Feature engineering** — costruisce dataset per il ML e stima il degrado gomma per mescola.
+- 🤖 **Machine learning** — modello di previsione del tempo sul giro (gradient boosting) con cross-validation.
+- 🧠 **Strategy optimizer (planning)** — simulatore di gara che trova la strategia gomme/pit ottimale
+  (numero di soste, mescole, lunghezza degli stint), con analisi di undercut/overcut.
+- 🖥️ **Dashboard** — interfaccia Streamlit: degrado, strategia consigliata, replay.
 
 ## Quickstart
 
 ```bash
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+python -m venv .venv && .venv\Scripts\activate    # Windows
 pip install -r requirements.txt
 
-# 1) Scarica una sessione reale (cache FastF1)
-python scripts/download_session.py --year 2024 --gp "Monza" --session R
+# Analisi + strategia ottimale su una gara reale
+python scripts/optimize_strategy.py --year 2024 --gp "Monza" --laps 53
 
-# 2) Baseline: pipeline su un onboard con YOLO pre-addestrato
-python scripts/run_pipeline.py --video data/samples/onboard.mp4 --out out/
+# Allena il modello di previsione tempi sul giro
+python scripts/train_models.py --year 2024 --gp "Monza"
 
-# 3) Dashboard
+# Dashboard
 streamlit run apps/dashboard.py
 ```
 
 ## Struttura
 
 ```
-f1-vision-analytics/
-├── PLAN.md                 # piano di progetto (leggi prima questo)
-├── README.md
-├── requirements.txt
-├── configs/default.yaml    # parametri pipeline
-├── data/                   # dataset e campioni (non versionare i video)
-├── src/f1va/
-│   ├── config.py           # caricamento config
-│   ├── detection.py        # wrapper YOLO
-│   ├── tracking.py         # ByteTrack
-│   ├── homography.py       # calibrazione + proiezione 2D
-│   ├── speed.py            # stima velocità/gap + Kalman
-│   ├── strategy.py         # analisi strategica + FastF1
-│   ├── pipeline.py         # orchestrazione end-to-end
-│   └── viz.py              # overlay e mini-mappa
-├── apps/dashboard.py       # UI Streamlit
-├── scripts/                # entrypoint CLI
-├── notebooks/              # esplorazione e validazione
-└── tests/                  # unit test
+src/f1va/
+├── data.py         # caricamento sessioni FastF1 + pulizia giri
+├── features.py     # dataset ML + tabella degrado gomme
+├── models.py       # modello tempi sul giro (scikit-learn) + CV + save/load
+├── strategy.py     # simulatore e ottimizzatore di strategia (planning)
+├── replay.py       # ricostruzione posizioni in pista per il replay
+└── config.py       # config YAML
+apps/dashboard.py   # dashboard Streamlit
+scripts/            # CLI: download, train, optimize
+tests/              # unit test (strategia + feature)
 ```
 
-## Note
+## Come funziona la strategia
 
-- I diritti dei video di F1 sono di FOM: usa clip solo per dimostrazione tecnica, cita la fonte,
-  non ridistribuire. Valuta onboard sintetici (sim/game) per materiale riutilizzabile.
-- FastF1 usa una cache locale: la prima esecuzione scarica i dati, le successive sono istantanee.
+Il degrado di ogni mescola è modellato come `tempo_giro = base + degrado * età_gomma`, stimato
+per regressione dai dati reali. Il simulatore somma i tempi degli stint più il tempo perso ai box,
+e l'ottimizzatore esplora tutte le combinazioni plausibili di soste, mescole e lunghezze
+per trovare quella col tempo gara minimo (rispettando la regola delle due mescole).
+
+## Dati
+
+FastF1 fornisce timing e telemetria ufficiali, gratuiti, con cache locale (`.fastf1_cache/`).
+Nessun dato proprietario nel repo.
 
 ## Licenza
 
-MIT (codice). I dati e i video restano dei rispettivi proprietari.
+MIT. Dati F1 di proprietà dei rispettivi titolari, usati a fini educativi e non commerciali.

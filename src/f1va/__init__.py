@@ -1,3 +1,3 @@
-"""F1 Vision Analytics — pipeline video -> analitica F1."""
+"""F1 Strategy & ML — analisi dati, modelli predittivi e ottimizzazione strategia F1."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

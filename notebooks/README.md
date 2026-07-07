@@ -1,9 +1,7 @@
 # notebooks/
 
-Notebook di esplorazione e validazione (uno per milestone):
+Notebook di esplorazione e validazione:
 
-- `01_fastf1_explore.ipynb` — carica una sessione, esplora giri, stint, telemetria.
-- `02_detector_eval.ipynb` — valuta il detector (mAP) su un set annotato.
-- `03_tracking_eval.ipynb` — metriche MOT (MOTA, IDF1) e casi di ID switch.
-- `04_speed_validation.ipynb` — confronto velocità stimata vs FastF1 (grafici + MAPE).
-- `05_strategy.ipynb` — degrado gomme, finestre di pit, simulazione undercut/overcut.
+- `01_data_explore.ipynb` — carica una sessione FastF1, esplora giri, stint, degrado.
+- `02_laptime_model.ipynb` — allena e valida il modello tempi sul giro (CV, predetto-vs-reale).
+- `03_strategy.ipynb` — simulatore, strategia ottimale, confronto con la strategia reale di gara.
