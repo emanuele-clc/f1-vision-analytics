@@ -97,6 +97,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .alt table{width:100%;border-collapse:collapse;margin-top:8px}
 .alt td{padding:7px 0;border-top:1px solid var(--border)}
 .alt td:last-child{text-align:right;color:#fff;font-variant-numeric:tabular-nums}
+select{width:100%;background:#141419;border:1px solid var(--border);border-radius:9px;color:#fff;padding:9px 10px;font-size:.9rem;outline:none}
+.mstep{display:flex;gap:16px;align-items:flex-start;margin-bottom:18px}
+.mstep .num{flex:none;width:34px;height:34px;border-radius:10px;background:var(--red);display:grid;place-items:center;font-weight:800;font-family:'Space Grotesk'}
+.mstep h4{font-size:1.02rem;margin-bottom:2px}
+.mstep p{color:var(--muted);font-size:.93rem}
+.mstep code{background:#141419;border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:.86rem;color:#ffd9d7}
 
 /* ---- bento ---- */
 .bento{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px}
@@ -133,7 +139,7 @@ footer a{color:#fff}
 <nav><div class="wrap">
   <div class="brand"><span class="dot"></span> F1 Strategy&nbsp;&amp;&nbsp;ML</div>
   <div class="nav-links">
-    <a href="#demo">Demo</a><a href="#pace">Degrado</a><a href="#features">Features</a><a href="#stack">Stack</a>
+    <a href="#demo">Demo</a><a href="#pace">Degrado</a><a href="#metodo">Metodo</a><a href="#features">Features</a><a href="#stack">Stack</a>
   </div>
   <a class="btn btn-primary" href="https://github.com/emanuele-clc/f1-vision-analytics" target="_blank">GitHub ↗</a>
 </div></nav>
@@ -160,6 +166,13 @@ footer a{color:#fff}
   <div class="demo" style="margin-top:30px">
    <div class="demo-grid">
     <div>
+      <div class="control"><label>Circuito <b id="v-circ">Monza 2024</b></label>
+        <select id="circuit">
+          <option value="monza">Monza · Italia (53 giri)</option>
+          <option value="silverstone">Silverstone · Gran Bretagna (52 giri)</option>
+          <option value="barcelona">Barcellona · Spagna (66 giri)</option>
+          <option value="monaco">Monaco (78 giri)</option>
+        </select></div>
       <div class="control"><label>Giri gara <b id="v-laps">53</b></label><input type="range" id="laps" min="30" max="78" value="53"></div>
       <div class="control"><label>Soste massime <b id="v-stops">2</b></label><input type="range" id="stops" min="1" max="3" value="2"></div>
       <div class="control"><label>Pit-loss (s) <b id="v-pit">22</b></label><input type="range" id="pit" min="15" max="30" value="22" step="0.5"></div>
@@ -174,7 +187,7 @@ footer a{color:#fff}
       </div>
     </div>
     <div class="result">
-      <h3>Strategia consigliata</h3>
+      <h3>Strategia consigliata — <span id="circ-name" style="color:var(--red)">Monza</span></h3>
       <div class="plan-bar" id="plan"></div>
       <div class="axis"><span>Giro 1</span><span id="axis-end">Giro 53</span></div>
       <div class="metrics">
@@ -185,7 +198,7 @@ footer a{color:#fff}
       <div class="alt"><b>Alternative migliori</b><table id="alts"></table></div>
     </div>
    </div>
-  </div>
+   <p style="color:var(--muted);font-size:.82rem;margin-top:18px;border-top:1px solid var(--border);padding-top:14px">I valori di base e degrado precaricati sono <b>rappresentativi</b> di ciascun circuito. Nella pipeline Python gli stessi parametri vengono <b>stimati dai dati reali FastF1</b> della sessione scelta.</p>  </div>
 </div></section>
 
 <section id="pace"><div class="wrap reveal">
@@ -193,6 +206,27 @@ footer a{color:#fff}
   <div class="h2">Come degradano le gomme</div>
   <p class="lead">Ogni mescola è modellata come <code>tempo = base + degrado · età</code>. La soft è veloce ma si consuma; la hard dura. L'ottimizzatore bilancia proprio questo.</p>
   <div class="demo" style="margin-top:30px"><canvas id="chart" height="120"></canvas></div>
+</div></section>
+
+
+<section id="metodo"><div class="wrap reveal">
+  <div class="eyebrow">Metodologia</div>
+  <div class="h2">Come viene calcolata la strategia</div>
+  <p class="lead">Lo stesso procedimento della pipeline Python, applicato al circuito selezionato sopra.</p>
+  <div style="margin-top:34px">
+    <div class="mstep"><div class="num">1</div><div>
+      <h4>Modello del degrado gomma</h4>
+      <p>Per ogni mescola il tempo sul giro è modellato come <code>tempo = base + degrado · età</code>. Su dati reali i due parametri si stimano con una regressione sui giri della sessione (FastF1).</p></div></div>
+    <div class="mstep"><div class="num">2</div><div>
+      <h4>Correzione del carburante</h4>
+      <p>Il serbatoio si svuota e l'auto diventa più veloce col passare dei giri. Un termine dedicato separa questo effetto dall'usura, così il degrado non risulta gonfiato dal peso benzina.</p></div></div>
+    <div class="mstep"><div class="num">3</div><div>
+      <h4>Simulazione di una strategia</h4>
+      <p>Uno stint di <code>L</code> giri costa la somma dei tempi giro per giro; il tempo gara totale aggiunge il tempo perso ai box (<code>pit-loss</code>) per ogni sosta. Dipende dal circuito: giri totali e pit-loss cambiano da pista a pista.</p></div></div>
+    <div class="mstep"><div class="num">4</div><div>
+      <h4>Ricerca della strategia ottimale</h4>
+      <p>Il sistema genera tutte le combinazioni ammissibili di soste, mescole e lunghezza degli stint (rispettando il vincolo delle due mescole), ne simula il tempo e restituisce il minimo. Per una gara da 53 giri sono migliaia di piani valutati.</p></div></div>
+  </div>
 </div></section>
 
 <section id="features"><div class="wrap reveal">
@@ -315,7 +349,24 @@ function render(){
 ['laps','stops','pit','soft-b','soft-d','med-b','med-d','hard-b','hard-d'].forEach(id=>{
   $(id).addEventListener('input',render);
 });
-render();
+
+const PRESETS={
+  monza:{name:'Monza',laps:53,soft:[78.0,0.14],med:[78.6,0.09],hard:[79.3,0.05]},
+  silverstone:{name:'Silverstone',laps:52,soft:[88.0,0.22],med:[88.7,0.13],hard:[89.6,0.07]},
+  barcelona:{name:'Barcellona',laps:66,soft:[76.0,0.25],med:[76.8,0.15],hard:[77.7,0.08]},
+  monaco:{name:'Monaco',laps:78,soft:[72.0,0.06],med:[72.5,0.04],hard:[73.1,0.025]},
+};
+function applyPreset(){
+  const p=PRESETS[$('circuit').value];
+  $('laps').value=p.laps;
+  $('soft-b').value=p.soft[0].toFixed(1);$('soft-d').value=p.soft[1];
+  $('med-b').value=p.med[0].toFixed(1);$('med-d').value=p.med[1];
+  $('hard-b').value=p.hard[0].toFixed(1);$('hard-d').value=p.hard[1];
+  $('v-circ').textContent=p.name;$('circ-name').textContent=p.name;
+  render();
+}
+$('circuit').addEventListener('change',applyPreset);
+applyPreset();
 
 // degradation chart
 const mods=models();

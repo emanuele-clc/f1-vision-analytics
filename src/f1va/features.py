@@ -45,3 +45,50 @@ def degradation_table(laps: pd.DataFrame, min_laps: int = 4) -> pd.DataFrame:
             "laps": int(len(g)),
         })
     return pd.DataFrame(rows).sort_values("compound").reset_index(drop=True)
+
+
+def fuel_corrected_degradation(laps: pd.DataFrame, min_laps: int = 4) -> pd.DataFrame:
+    """Degrado gomma separato dall'effetto carburante.
+
+    Il tempo sul giro cala col carburante che si consuma (auto piu leggera) e cresce
+    con l'usura gomma. Un modello a minimi quadrati stima insieme, per ogni mescola,
+    `base` e `degrado`, piu un unico coefficiente globale `carburante` (s per giro di
+    carico residuo, tipicamente negativo). L'effetto carburante e identificabile quando
+    una mescola compare in stint a intervalli di giri diversi.
+
+    Ritorna: compound, base_s, deg_s_per_lap (corretto), fuel_s_per_lap, laps.
+    """
+    df = laps.dropna(subset=["laptime_s", "TyreLife", "LapNumber"]).copy()
+    comp = df["Compound"].astype(str).str.upper()
+    compounds = [c for c in sorted(comp.unique())
+                 if (comp == c).sum() >= min_laps and df.loc[comp == c, "TyreLife"].nunique() >= 2]
+    if not compounds:
+        return pd.DataFrame(columns=["compound", "base_s", "deg_s_per_lap", "fuel_s_per_lap", "laps"])
+
+    mask = comp.isin(compounds)
+    df, comp = df[mask], comp[mask]
+    life = df["TyreLife"].to_numpy(float)
+    lap = df["LapNumber"].to_numpy(float)
+
+    cols, names = [], []
+    for c in compounds:                      # base + degrado per mescola (interazioni)
+        ind = (comp == c).to_numpy(float)
+        cols += [ind, ind * life]
+        names += [("base", c), ("deg", c)]
+    cols.append(lap)                         # unico termine carburante globale
+    names.append(("fuel", None))
+
+    design = np.column_stack(cols)
+    coef, *_ = np.linalg.lstsq(design, df["laptime_s"].to_numpy(float), rcond=None)
+    fuel = float(coef[names.index(("fuel", None))])
+
+    rows = []
+    for c in compounds:
+        rows.append({
+            "compound": c,
+            "base_s": round(float(coef[names.index(("base", c))]), 3),
+            "deg_s_per_lap": round(float(coef[names.index(("deg", c))]), 4),
+            "fuel_s_per_lap": round(fuel, 4),
+            "laps": int((comp == c).sum()),
+        })
+    return pd.DataFrame(rows).reset_index(drop=True)

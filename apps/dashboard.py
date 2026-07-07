@@ -106,6 +106,8 @@ with st.sidebar:
     session_type = st.selectbox("Sessione", ["R", "Q", "FP1", "FP2", "FP3"], index=0)
     load = st.button("Carica sessione", type="primary", use_container_width=True)
     st.caption("La prima volta il download può richiedere ~1 minuto (poi va in cache).")
+    fuel_corr = st.checkbox("Correggi effetto carburante", value=True,
+        help="Separa il degrado gomma dal calo di peso benzina (stima più realistica).")
 
 if load:
     with st.spinner("Scarico e preparo i dati…"):
@@ -113,20 +115,24 @@ if load:
         raw = f1data.laps_dataframe(ses)
         laps = f1data.quicklaps(raw)
         st.session_state.update(
-            ses=ses, raw=raw, laps=laps, deg=features.degradation_table(laps),
+            ses=ses, raw=raw, laps=laps,
             meta=f"{int(year)} · {gp} · {session_type}",
         )
 
 # ----------------------------------------------------------------------------- #
 #  Corpo
 # ----------------------------------------------------------------------------- #
-if "deg" not in st.session_state:
+if "laps" not in st.session_state:
     st.info("Scegli anno e Gran Premio nella barra laterale e premi **Carica sessione**.")
     st.stop()
 
 laps = st.session_state["laps"]
-deg = st.session_state["deg"]
-st.caption(f"Sessione caricata: **{st.session_state['meta']}**")
+deg = (features.fuel_corrected_degradation(laps) if fuel_corr
+       else features.degradation_table(laps))
+if deg.empty:
+    deg = features.degradation_table(laps)
+st.caption(f"Sessione caricata: **{st.session_state['meta']}**"
+           + ("  ·  degrado corretto per carburante" if fuel_corr else ""))
 
 c1, c2, c3, c4 = st.columns(4)
 kpi(c1, "Giri validi", f"{len(laps)}")

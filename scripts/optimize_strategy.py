@@ -21,11 +21,14 @@ def main() -> None:
     ap.add_argument("--gp", required=True)
     ap.add_argument("--laps", type=int, required=True)
     ap.add_argument("--max-stops", type=int, default=2)
+    ap.add_argument("--fuel-correct", action="store_true",
+                    help="separa il degrado gomma dall'effetto carburante")
     args = ap.parse_args()
 
     ses = f1data.load_session(args.year, args.gp, "R")
     laps = f1data.quicklaps(f1data.laps_dataframe(ses))
-    deg = features.degradation_table(laps)
+    deg = (features.fuel_corrected_degradation(laps) if args.fuel_correct
+           else features.degradation_table(laps))
     print("Degrado stimato:\n", deg.to_string(index=False))
 
     models = strategy.fit_tyre_models(deg)
