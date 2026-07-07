@@ -63,6 +63,18 @@ L'importanza delle feature conferma la fisica attesa: eta gomma, poi mescola, ca
 > `python scripts/train_models.py --synthetic --heavy` (rigoroso: dataset ampio, ricerca
 > iperparametri estesa, curva di apprendimento, ensemble — alcuni minuti).
 
+## Duello testa a testa e imprevisti
+
+Oltre alla strategia in solitaria, il modulo `duel` simula un **confronto diretto con un rivale**
+modellando la **posizione in pista**: chi segue da vicino perde tempo in **aria sporca** e fatica a
+superare, a meno di un vantaggio di passo (es. gomme fresche dopo un **undercut**). Considera anche
+gli **imprevisti** — Safety Car (compatta il gruppo, pit economico), ritiri, pioggia (che rimescola
+l'ordine) — e restituisce la probabilita di finire davanti al rivale.
+
+```bash
+python scripts/duel.py --synthetic --laps 53 --gap -0.8
+```
+
 ## Dati reali FastF1
 
 Tutto funziona offline con dati sintetici, ma è pensato per i **dati reali**. Sul tuo PC con
